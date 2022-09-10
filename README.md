@@ -1,2 +1,3 @@
 # AWS_SF_ESB
-Test
+
+Proof of Concept to use AWS as a cost-efficient esb solution for small Salesforce projects
