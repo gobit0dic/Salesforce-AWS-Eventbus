@@ -145,7 +145,6 @@ If you added the event bus to CloudWatch, you will see the logfile there.
 
 ## Future Improvements
 - Compare costs for full payload event vs. change event + data retrieve via API
-- I will try to build a package to roll out the whole bus via deployment. In that case it scales much better and setup time will be lower
 - I implement a monitoring system for the Salesforce-side of the bus
 
 ## Limitations
