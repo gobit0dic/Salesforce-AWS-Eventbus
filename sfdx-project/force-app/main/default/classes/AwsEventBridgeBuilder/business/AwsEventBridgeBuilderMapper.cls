@@ -12,6 +12,19 @@ public with sharing class AwsEventBridgeBuilderMapper {
         return bodyJSON;
     }
 
+    public static JSONGenerator mapToNamedCredentialsCreationBody(String developerName, String label, String region, String arnId){
+        JSONGenerator bodyJSON = JSON.createGenerator(true);
+        bodyJSON.writeStartObject();
+        bodyJSON.writeStringField('FullName', developerName);
+        bodyJSON.writeFieldName('Metadata');
+        bodyJSON.writeStartObject();
+        bodyJSON.writeStringField('protocol', 'NoAuthentication');
+        bodyJSON.writeStringField('principalType', 'NamedUser');
+        bodyJSON.writeStringField('label', label);
+        bodyJSON.writeStringField('endpoint', 'arn:aws:' + region.toUpperCase() + ':' + arnId);
+        return bodyJSON;
+    }
+
     public static JSONGenerator mapToEventChannelMemberCreationBody(String eventChannelMemberName, String eventChannelName, String platformEventName){
         JSONGenerator bodyJSON = JSON.createGenerator(true);
         bodyJSON.writeStartObject();

@@ -7,6 +7,15 @@ public with sharing class AwsEventBridgeBuilderFacade {
     public class NotFoundException extends Exception {}
     public class WrongPayloadException extends Exception {}
 
+    public static void createNamedCredentials(String developerName, String label, String region, String arnId){
+        AwsEventBridgeBuilder builder = new AwsEventBridgeBuilder();
+        JSONGenerator bodyJSON = AwsEventBridgeBuilderMapper.mapToNamedCredentialsCreationBody(developerName, label, region, arnId);
+        HTTPRequest req = builder.createHttpPOSTRequest('NamedCredentials', bodyJSON.getAsString());
+        Http http = new Http();
+        HttpResponse res = http.send(req);
+        System.debug(res.getBody());
+    }
+
     public static void createPlatformEventChannel(String channelName, String label, Boolean isDataChannel){
         AwsEventBridgeBuilder builder = new AwsEventBridgeBuilder();
         if(!channelName.endsWith('__chn')){

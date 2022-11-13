@@ -90,6 +90,10 @@ If you want to create them by your own, you can use Metadata API or Tooling API.
 
 ##### 4. Create named credentials
 You can just modify the example named credentials from this repo and deploy them. 
+
+Another option is to create them also via Tooling API. Please use following method:
+`AwsEventBridgeBuilderFacade.createNamedCredentials(developerName, label, region, arnId)`
+
 If you want to create them by your own, please use the legacy type of named credentials with following settings: 
 - Identity Type = Named Principal 
 - Authentication Protocol = No Authentication

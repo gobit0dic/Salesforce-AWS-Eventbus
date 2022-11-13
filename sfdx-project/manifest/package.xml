@@ -5,7 +5,12 @@
         <members>AwsEventBridgeBuilderFacade</members>
         <members>AwsEventBridgeBuilderMapper</members>
         <members>AwsEventBridgeBuilderPersistence</members>
+        <members>samplePlatformEventPropagation</members>
         <name>ApexClass</name>
+    </types>
+    <types>
+        <members>AWS_Eventbus</members>
+        <name>NamedCredential</name>
     </types>
     <version>56.0</version>
 </Package>
