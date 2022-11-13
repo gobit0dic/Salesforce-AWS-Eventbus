@@ -5,7 +5,9 @@
         <members>AwsEventBridgeBuilderFacade</members>
         <members>AwsEventBridgeBuilderMapper</members>
         <members>AwsEventBridgeBuilderPersistence</members>
-        <members>samplePlatformEventPropagation</members>
+        <members>AwsEventBridgeBuilderTest</members>
+        <members>SamplePlatformEventPropagation</members>
+        <members>samplePlatformEventPropagationTest</members>
         <name>ApexClass</name>
     </types>
     <types>
