@@ -68,6 +68,14 @@ This is an example use case if e.g. the fields on your object changes or you add
 
 # Setup Guide
 
+## Quickstart
+Please read carefully the single steps of the creation process. But, I also added some Quickstart guidance. 
+You can use following method which will create a named credential (if not existing), as well as channel, channel member 
+and event config relay for a given platform event. 
+
+`AwsEventBridgeBuilderQuickstart.fullSetup(region, arnId, platformEventName)`
+
+
 ## Steps
 ##### 1. Create a Custom Platform Event (if not existing)
 You can create your custom Platform Event from the Saleforce GUI or via Metadata API.
