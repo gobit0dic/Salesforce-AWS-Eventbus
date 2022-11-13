@@ -38,3 +38,9 @@ $RECYCLE.BIN/
 
 # Local environment variables
 .env
+/.vscode/
+/.idea/
+/IlluminatedCloud/
+/scripts/
+/manifest/
+sfdx-project.iml
