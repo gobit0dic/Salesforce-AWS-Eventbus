@@ -6,10 +6,10 @@ Proof of Concept to use AWS as a cost-efficient event bus solution for small Sal
 Since Salesforces Winter '23 release, you are able to use a standard connection between Salesforce Core Cloud and Amazon AWS Eventbride. I'll show a simple PoC how to build a stable Pub/Sub channel between the two services. In addition, I'll show an example cost calculation which shows that it's an interesting solution for companies who are already using AWS or don't have a ESB in place yet.
 
 ## Advantages
-- AWS is pretty cost efficient compared to other middleware solutions
-- AWS can be setup via deployment as it supports Infrastructure As Code (IaC). Therefore it is a scalable solution to roll out for multiple customer
+- AWS is pretty cost-efficient compared to other middleware solutions
+- AWS can be setup via deployment as it supports Infrastructure As Code (IaC). Therefore, it is a scalable solution to roll out for multiple customer
 - Salesforce channel setup can also be deployed or created easy without in-deep integration knowledge
-- Pub/Sub (Fire & Forget) integration can easily support error handling and replay of missed events. In that case you don't need to build custom retry mechanism at your REST endpoint. Instead you can monitor the event propagation in Salesforce and you can use declarative solutions at AWS side like SQS/SNS for deadletter queues.
+- Pub/Sub (Fire & Forget) integration can easily support error handling and replay of missed events. In that case you don't need to build custom retry mechanism at your REST endpoint. Instead, you can monitor the event propagation in Salesforce and you can use declarative solutions at AWS side like SQS/SNS for deadletter queues.
 
 ## Simple Architecture Approach
 
@@ -26,7 +26,7 @@ This calculation is based on the time I needed to implement the PoC. Probably yo
 |----------------------------------------------------------------------------|--------|
 | Initial Setup per PlatformEventChannel + EventBusRelay                     | ~ 1h   |
 | Setup per Salesforce Platform Event incl. Salesforce record-triggered Flow | ~ 1-2h |
-| Initial Setup AWS                                                          | ~ 2h   |
+| Initial Setup AWS (Account, Access Management, ...)                        | ~ 2h   |
 | Setup AWS event handling (no transformation)                               | ~ 2h   |
 | Testing                                                                    | ~ 1h   |
 |                                                                            |        |
@@ -70,17 +70,22 @@ This is an example use case if e.g. the fields on your object changes or you add
 
 ## Steps
 ##### 1. Create a Custom Platform Event (if not existing)
-You can create your custom Platform Event from the Saleforce GUI or via Metadata API (https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_define.htm).
+You can create your custom Platform Event from the Saleforce GUI or via Metadata API.
+
 A sample platform event is included in this repo (./force-app/main/default/objects/TestForAWS__e.object-meta.xml).
 
 ##### 2. Create a Channel for a Custom Platform Event
-You can just use the class "EventBusSetup" from this repo. Call the method "createPlatformEventChannel" with following parameter:
-[TODO]
+You can just use the class "AwsEventBridgeBuilderFacade" from this repo:
+
+`AwsEventBridgeBuilderFacade.createPlatformEventChannel(channelName, label, isDataChannel)`
+
 If you want to create them by your own, you can use Metadata API or Tooling API.
 
 ##### 3. Create a Channel Member to Associate the Custom Platform Event
-You can just use the class "EventBusSetup" from this repo. Call the method "createPlatformEventChannelMember" with following parameter:
-[TODO]
+You can just use the class "AwsEventBridgeBuilderFacade" from this repo:
+
+`AwsEventBridgeBuilderFacade.createPlatformEventChannelMember(channelMemberName, channelName, platformEventName)`
+
 If you want to create them by your own, you can use Metadata API or Tooling API.
 
 ##### 4. Create named credentials
@@ -90,18 +95,30 @@ If you want to create them by your own, please use the legacy type of named cred
 - Authentication Protocol = No Authentication
 - URL = arn:aws:[REGION]:[AWS ACCOUNTID]
 
+![](assets/img/named_credentials.png)
+
 ##### 5. Create an Event Relay Configuration (via Metadata API, Tooling API or via APEX classe)
-You can just use the class "EventBusSetup" from this repo. Call the method "createEventRelayConfiguration" with following parameter:
-[TODO]
+You can just use the class "AwsEventBridgeBuilderFacade" from this repo:
+
+`AwsEventBridgeBuilderFacade.createEventRelayConfig(configName, eventChannelAPIName)`
+
 If you want to create them by your own, you can use Metadata API or Tooling API.
 
 ##### 6. Activate the Event Bus in AWS Amazon EventBridge
-[TODO]
+Just browse to EventBridge - Partner Event Sources. You will see your event channel with status "Pending". 
+![](assets/img/partner_source.png)
+
+You can now click "Associate" to activate the event source and connect it with your event bus.
+![](assets/img/source_associate.png)
+
+I usually associate the bus with CloudWatch to see the event as a log file.
 
 ##### 7. Activate Event Relay Configuration (via Metadata API, Tooling API or via APEX classe)
-You can just use the class "EventBusSetup" from this repo. Call the method "runEventRelayConfiguration" with following parameter:
-[TODO]
-If you want to activate them by your own, you can use Metadata API or Tooling API.
+You can just use the class "AwsEventBridgeBuilderFacade" from this repo:
+
+`AwsEventBridgeBuilderFacade.runEventRelayConfig(eventRelayConfigAPIName)`
+
+If you want to run them by your own, you can use Metadata API or Tooling API.
 
 You can check the status of the Bus via: 
 
@@ -109,52 +126,23 @@ You can check the status of the Bus via:
 
 ##### 8. Send test event
 Create a sample platform event via FlowBuilder or you can also send one via API or Apex. A sample code for sending one is in the repo called "createPlatformEvent"
+[TODO]
+
+If you added the event bus to CloudWatch, you will see the logfile there.
+![](assets/img/event_log.png)
 
 ## Future Improvements
 - Compare costs for full payload event vs. change event + data retrieve via API
 - I will try to build a package to roll out the whole bus via deployment. In that case it scales much better and setup time will be lower
 - I implement a monitoring system for the Salesforce-side of the bus
 
-## Idea of an Architecture Solution with Error Handling and Subsystems
-
-[INSERT IMAGE]
-
 ## Limitations
 - It just works for me with ChannelTypes = event. Data channel like Change Data Capture should work but didn't for me. Probably we just have to wait for the next update until you can get rid of custom platform events
 - Platform events are limited to a size of 1MB. If you want to use larger events, I recommend to just send the ID and changed fields and just query the data from Salesforce in the next step. 
 - There is a chance that the EventRelay can fail at Salesforce side and needs to get restarted. I recommend to implement a solution to query the status of the EventRelay, notify your team and try to automatically restart it in case of failure. That could be easy build with scheduled APEX and Tooling API. (Also see Future Improvements)
-
 
 ## Sources
 - https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_event_limits.htm
 - https://aws.amazon.com/eventbridge/pricing/
 - https://aws.amazon.com/sqs/pricing/
 - https://help.salesforce.com/s/articleView?id=release-notes.rn_event_bus_relay_pilot.htm&type=5&release=236&language=en_US
-
-
-
-Punkt 4:
-Tooling API: 
-String baseUrl = URL.getSalesforceBaseUrl().toExternalForm() + '/services/data/v56.0/tooling/';
-HTTPRequest req = new HTTPRequest();
-req.setEndpoint(baseUrl + 'sobjects/EventRelayConfig');
-req.setMethod('POST');
-req.setHeader('Authorization', 'Bearer ' + UserInfo.getSessionId());
-req.setHeader('Content-Type', 'application/json');
-req.setBody('{"FullName": "AwsEventRelay","Metadata": {"destinationResourceName": "callout:AWS_Eventbridge","eventChannel": "MyRelayChannel__chn","state": "STOP"}}');
-Http h = new Http();
-HttpResponse res = h.send(req);
-System.debug(res.getBody());
-
-Punkt 6: 
-String baseUrl = URL.getSalesforceBaseUrl().toExternalForm() + '/services/data/v56.0/tooling/';
-HTTPRequest req = new HTTPRequest();
-req.setEndpoint(baseUrl + 'sobjects/EventRelayConfig/7k23G000000000BQAQ');
-req.setMethod('PATCH');
-req.setHeader('Authorization', 'Bearer ' + UserInfo.getSessionId());
-req.setHeader('Content-Type', 'application/json');
-req.setBody('{"Metadata": {"state": "RUN"}}');
-Http h = new Http();
-HttpResponse res = h.send(req);
-System.debug(res.getBody());
-
