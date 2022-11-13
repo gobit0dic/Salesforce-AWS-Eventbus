@@ -55,4 +55,9 @@ global with sharing class AwsEventBridgeBuilderTest {
         AwsEventBridgeBuilderFacade.runEventRelayConfig('test');
     }
 
+    testMethod static void quickstartFullSetup(){
+        Test.setMock(HttpCalloutMock.class, new MockHttpResponseGenerator());
+        AwsEventBridgeBuilderQuickstart.fullSetup('EU-Central-1', '123', 'platformevent__e');
+    }
+
 }
