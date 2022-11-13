@@ -11,9 +11,9 @@ Since Salesforces Winter '23 release, you are able to use a standard connection 
 - Salesforce channel setup can also be deployed or created easy without in-deep integration knowledge
 - Pub/Sub (Fire & Forget) integration can easily support error handling and replay of missed events. In that case you don't need to build custom retry mechanism at your REST endpoint. Instead you can monitor the event propagation in Salesforce and you can use declarative solutions at AWS side like SQS/SNS for deadletter queues.
 
-## Simple Architecture
+## Simple Architecture Approach
 
-[INSERT IMAGE]
+![](assets/img/simple_architecture.jpg)
 
 
 ## Cost Calculation
@@ -63,6 +63,10 @@ This is an example use case if e.g. the fields on your object changes or you add
 |                             |              |                                 |                |               |
 | Sum                         | -            | -                               | -              | 2,49$         |
 
+
+---
+
+# Setup Guide
 
 ## Steps
 ##### 1. Create a Custom Platform Event (if not existing)
@@ -123,7 +127,9 @@ Create a sample platform event via FlowBuilder or you can also send one via API 
 
 ## Sources
 - https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_event_limits.htm
-
+- https://aws.amazon.com/eventbridge/pricing/
+- https://aws.amazon.com/sqs/pricing/
+- https://help.salesforce.com/s/articleView?id=release-notes.rn_event_bus_relay_pilot.htm&type=5&release=236&language=en_US
 
 
 
