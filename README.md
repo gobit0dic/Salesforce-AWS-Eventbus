@@ -155,8 +155,8 @@ You can check the status of the Bus via:
 `SELECT EventRelayConfig.DeveloperName, Status, ErrorMessage, ErrorTime, ErrorCode FROM EventRelayFeedback`
 
 ##### 8. Send test event
-Create a sample platform event via FlowBuilder or you can also send one via API or Apex. A sample code for sending one is in the repo called "createPlatformEvent"
-[TODO]
+Create a sample platform event via FlowBuilder or you can also send one via API or Apex. A sample code for sending one is in the repo
+`SamplePlatformEventPropagation.publishSamplePlatformEvent()`
 
 If you added the event bus to CloudWatch, you will see the logfile there.
 ![](assets/img/event_log.png)
