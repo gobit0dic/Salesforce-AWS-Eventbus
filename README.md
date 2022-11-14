@@ -13,6 +13,12 @@ Since Salesforces Winter '23 release, you are able to use a standard connection 
 
 ## Simple Architecture Approach
 
+- This is the simplest approach with a platform event triggered from a Salesforce flow or APEX trigger.
+- EventBridge consumes the event and uses the input transformer to do simple mappings
+- EventBridge does a callout to a 3rd party REST endpoint
+- For error handling, we use the inbuilt retry of EventBridge and a Dead-Letter-Queue if the retry limit is reached
+
+
 ![](assets/img/simple_architecture.jpg)
 
 
@@ -63,6 +69,18 @@ This is an example use case if e.g. the fields on your object changes or you add
 |                             |              |                                 |                |               |
 | Sum                         | -            | -                               | -              | 2,49$         |
 
+
+
+## More Mature Architecture Approach
+
+- This is the more mature approach compared to the simple approach above
+- I would use a scheduled APEX to monitor the event channel and notify if the event propagation or event consuming is below a threshold. I would also monitor the EventRelayConfig if it's still running
+- On AWS side, I would use CloudWatch to monitor the EventBridge and Dead-Letter-Queue
+- As an example, I added a common SAP S/4 Hana system which can be connected via the standard connector of the SAP Integration Suite
+- For complexer transformation processes or maybe Change-Capture-Data event, I also added AWS Lambda which can do complex calculations in Python, Node or Java
+- In addition, I prefer a queuing approach for the callouts for which I would use SQS + SNS
+
+![](assets/img/mature_architecture.jpg)
 
 ---
 
@@ -157,3 +175,7 @@ If you added the event bus to CloudWatch, you will see the logfile there.
 - https://aws.amazon.com/eventbridge/pricing/
 - https://aws.amazon.com/sqs/pricing/
 - https://help.salesforce.com/s/articleView?id=release-notes.rn_event_bus_relay_pilot.htm&type=5&release=236&language=en_US
+- https://api.sap.com/package/AmazonWebServicesAdapter/overview
+- https://docs.aws.amazon.com/lambda/latest/dg/getting-started.html
+- https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html
+- https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_monitor_usage.htm
