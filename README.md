@@ -13,6 +13,12 @@ Since Salesforces Winter '23 release, you are able to use a standard connection 
 
 ## Simple Architecture Approach
 
+- This is the simplest approach with a platform event triggered from a Salesforce flow or APEX trigger.
+- EventBridge consumes the event and uses the input transformer to do simple mappings
+- EventBridge does a callout to a 3rd party REST endpoint
+- For error handling, we use the inbuilt retry of EventBridge and a Dead-Letter-Queue if the retry limit is reached
+
+
 ![](assets/img/simple_architecture.jpg)
 
 
@@ -44,7 +50,7 @@ This is an example use case if e.g. the fields on your object changes or you add
 | Sum                                                                        | ~ 2h   |
 
 
-### AWS Costs - Example calculation
+### AWS Costs - Example calculation (Full Payload)
 
 **Assumption:** 
 - Location: EU-Central
@@ -59,10 +65,44 @@ This is an example use case if e.g. the fields on your object changes or you add
 | AWS EventBridge             | -            | 1.00$ / 1.000.000 (64kb chunks) | 1,2 Mio events | 1,20$         |
 | AWS EventBridge Replay      | -            | 0.12$ / GB                      | 0,768 GB       | 0,09$         |
 | AWS EventBridge Destination | -            | 0.24$ / 1.000.000 (64kb chunks) | 1,2 Mio events | 1,20$         |
-| AWS SQS                     | 1.000.000    | 0.40$ / 1.000.000               | Free tier      | 0,00$         |
+| AWS SQS                     | 1.000.000    | 0.40$ / 1.000.000               | 3k events      | 0,00$         |
 |                             |              |                                 |                |               |
 | Sum                         | -            | -                               | -              | 2,49$         |
 
+
+### AWS Costs - Example calculation (Change Data Capture)
+
+**Assumption:**
+- Change Data Capture = Just the Id and changed fields in event -> Consumer queries the fields by itself
+- Location: EU-Central
+- 300.000 Events per Month (10.000 events/24h * 30 days) = Platform Event limit of smaller orgs
+- Event-message size: 16KB
+- Delivery Rate: 99.9% = 3.000 replays
+- Simple transformation via EventBridge Input Transformer
+- Lambda to fetch data from Salesforce Database (Duration Callout: 5s)
+- SQS as dead-letter queue
+
+| AWS Service                 | Free Service          | Payed Service                 | Quantity        | Monthly Costs |
+|-----------------------------|-----------------------|-------------------------------|-----------------|---------------|
+| AWS EventBridge             | -                     | 1.00$ / mio (64kb chunks)     | 300k events     | 0,30$         |
+| AWS EventBridge Replay      | -                     | 0.12$ / GB                    | 0,048 GB        | 0,01$         |
+| AWS EventBridge Destination | -                     | 0.24$ / mio (64kb chunks)     | 300k events     | 0,30$         |
+| AWS Lambda                  | 1.000.000 - 400k GB/s | 0.20$ / mio - 0.000016$ / GBs | 300k - 234 GB/s | 0,00$         |
+| AWS SQS                     | 1.000.000             | 0.40$ / mio                   | 3k events       | 0,00$         |
+|                             |                       |                               |                 |               |
+| Sum                         | -                     | -                             | -               | 0,61$         |
+
+
+## More Mature Architecture Approach
+
+- This is the more mature approach compared to the simple approach above
+- I would use a scheduled APEX to monitor the event channel and notify if the event propagation or event consuming is below a threshold. I would also monitor the EventRelayConfig if it's still running
+- On AWS side, I would use CloudWatch to monitor the EventBridge and Dead-Letter-Queue
+- As an example, I added a common SAP S/4 Hana system which can be connected via the standard connector of the SAP Integration Suite
+- For complexer transformation processes or maybe Change-Capture-Data event, I also added AWS Lambda which can do complex calculations in Python, Node or Java
+- In addition, I prefer a queuing approach for the callouts for which I would use SQS + SNS
+
+![](assets/img/mature_architecture.jpg)
 
 ---
 
@@ -137,16 +177,12 @@ You can check the status of the Bus via:
 `SELECT EventRelayConfig.DeveloperName, Status, ErrorMessage, ErrorTime, ErrorCode FROM EventRelayFeedback`
 
 ##### 8. Send test event
-Create a sample platform event via FlowBuilder or you can also send one via API or Apex. A sample code for sending one is in the repo called "createPlatformEvent"
-[TODO]
+Create a sample platform event via FlowBuilder or you can also send one via API or Apex. A sample code for sending one is in the repo
+`SamplePlatformEventPropagation.publishSamplePlatformEvent()`
 
 If you added the event bus to CloudWatch, you will see the logfile there.
 ![](assets/img/event_log.png)
 
-## Future Improvements
-- Compare costs for full payload event vs. change event + data retrieve via API
-- I will try to build a package to roll out the whole bus via deployment. In that case it scales much better and setup time will be lower
-- I implement a monitoring system for the Salesforce-side of the bus
 
 ## Limitations
 - It just works for me with ChannelTypes = event. Data channel like Change Data Capture should work but didn't for me. Probably we just have to wait for the next update until you can get rid of custom platform events
@@ -158,3 +194,7 @@ If you added the event bus to CloudWatch, you will see the logfile there.
 - https://aws.amazon.com/eventbridge/pricing/
 - https://aws.amazon.com/sqs/pricing/
 - https://help.salesforce.com/s/articleView?id=release-notes.rn_event_bus_relay_pilot.htm&type=5&release=236&language=en_US
+- https://api.sap.com/package/AmazonWebServicesAdapter/overview
+- https://docs.aws.amazon.com/lambda/latest/dg/getting-started.html
+- https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html
+- https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_monitor_usage.htm
