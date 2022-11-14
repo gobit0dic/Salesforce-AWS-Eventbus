@@ -3,28 +3,33 @@
 Proof of Concept to use AWS as a cost-efficient event bus solution for small Salesforce projects
 
 ## Introduction
-Since Salesforces Winter '23 release, you are able to use a standard connection between Salesforce Core Cloud and Amazon AWS Eventbride. I'll show a simple PoC how to build a stable Pub/Sub channel between the two services. In addition, I'll show an example cost calculation which shows that it's an interesting solution for companies who are already using AWS or don't have a ESB in place yet.
+Since Salesforces Winter '23 release, you are able to use a standard connection between Salesforce Core Cloud 
+and Amazon AWS EventBridge. I will show a simple PoC on how to set up a stable Pub/Sub channel between the two services. 
+In addition, I'll show an example cost calculation which shows that it's an interesting solution for companies 
+that are already using AWS or don't have a ESB in place yet.
 
 ## Advantages
 - AWS is pretty cost-efficient compared to other middleware solutions
-- AWS can be setup via deployment as it supports Infrastructure As Code (IaC). Therefore, it is a scalable solution to roll out for multiple customer
-- Salesforce channel setup can also be deployed or created easy without in-deep integration knowledge
-- Pub/Sub (Fire & Forget) integration can easily support error handling and replay of missed events. In that case you don't need to build custom retry mechanism at your REST endpoint. Instead, you can monitor the event propagation in Salesforce and you can use declarative solutions at AWS side like SQS/SNS for deadletter queues.
+- AWS can be setup via deployment as it supports Infrastructure As Code (IaC). Therefore, it is a scalable solution that can be deployed for multiple customer
+- Salesforce channel setup can be easily deployed or created even without deep integration knowledge
+- Pub/Sub integration (Fire & Forget) can easily support error handling and replay of missed events. In that case you don't need to build a custom retry mechanism on your REST endpoint. Instead, you can monitor the event propagation in Salesforce and you can use declarative solutions at AWS side like SQS/SNS for deadletter queues.
 
 ## Simple Architecture Approach
 
-- This is the simplest approach with a platform event triggered from a Salesforce flow or APEX trigger.
-- EventBridge consumes the event and uses the input transformer to do simple mappings
-- EventBridge does a callout to a 3rd party REST endpoint
-- For error handling, we use the inbuilt retry of EventBridge and a Dead-Letter-Queue if the retry limit is reached
-
+- This is the simplest approach with a platform event triggered from a Salesforce flow or APEX trigger
+- EventBridge consumes the event and uses the input transformer to perform simple mappings
+- EventBridge performs a callout to a 3rd party REST endpoint
+- For error handling, we use EventBridge's built-in retry function and a dead letter queue when the retry limit is reached
 
 ![](assets/img/simple_architecture.jpg)
 
 
 ## Cost Calculation
 
-This calculation is based on the time I needed to implement the PoC. Probably you will need additional time for a productive implementation e.g. for Dead-Letter-Queues or transformation processes. Eventually, you will also implement some consuming 3rd party systems like SAP / ERP or a shop system which also need integration time. Depending on the available endpoints and protocols. 
+This calculation is based on the time it took me to implement the PoC.
+You will probably need additional time for a productive implementation, e.g. for dead letter queues or advanced transformation processes.
+You may also be implementing other systems such as SAP / ERP or a shop system that also require integration time. 
+Depending on the available endpoints and protocols. 
 
 ### Setup Time
 
@@ -40,7 +45,7 @@ This calculation is based on the time I needed to implement the PoC. Probably yo
 
 ### Update Time
 
-This is an example use case if e.g. the fields on your object changes or you add additional fields.
+This is an example of a use case when, for example, the fields in your object change or you add additional fields.
 
 | Work Item                                                                  | Time   |
 |----------------------------------------------------------------------------|--------|
@@ -96,11 +101,12 @@ This is an example use case if e.g. the fields on your object changes or you add
 ## More Mature Architecture Approach
 
 - This is the more mature approach compared to the simple approach above
-- I would use a scheduled APEX to monitor the event channel and notify if the event propagation or event consuming is below a threshold. I would also monitor the EventRelayConfig if it's still running
-- On AWS side, I would use CloudWatch to monitor the EventBridge and Dead-Letter-Queue
-- As an example, I added a common SAP S/4 Hana system which can be connected via the standard connector of the SAP Integration Suite
-- For complexer transformation processes or maybe Change-Capture-Data event, I also added AWS Lambda which can do complex calculations in Python, Node or Java
-- In addition, I prefer a queuing approach for the callouts for which I would use SQS + SNS
+- I would use a scheduled APEX to monitor the event channel and notify when the event propagation or event consuming is below a threshold. I would also monitor the EventRelayConfig if it's still running.
+- On AWS side, I would use CloudWatch to monitor the EventBridge and a Dead-Letter-Queue.
+- As an example, I've added a common SAP S/4 Hana system which can be connected via the standard SAP Integration Suite connector.
+- For more complex transformation processes or perhaps Change-Capture-Data event, I also added AWS Lambda which can perform complex computations in Python, Node or Java.
+- In addition, I prefer a queuing approach for the callouts for which I would use SQS + SNS.
+- Note: For simplicity, only the Salesforce unidirectional path is shown. Salesforce can also consume from the EventChannel and write back to objects 
 
 ![](assets/img/mature_architecture.jpg)
 
@@ -109,9 +115,13 @@ This is an example use case if e.g. the fields on your object changes or you add
 # Setup Guide
 
 ## Quickstart
-Please read carefully the single steps of the creation process. But, I also added some Quickstart guidance. 
-You can use following method which will create a named credential (if not existing), as well as channel, channel member 
-and event config relay for a given platform event. 
+Please read carefully each step of the creation process. However, I also included a quick start guide. 
+You can use following method which will create a named credential (if not existing), as well as a EventChannel, 
+EventChannelMember and EventConfigRelay for a given platform event.
+
+Note: 
+- Region has to be provide in uppercase (e.g. EU-CENTRAL-1)
+- The Platform Event name needs to be provide with ending __e
 
 `AwsEventBridgeBuilderQuickstart.fullSetup(region, arnId, platformEventName)`
 
@@ -120,29 +130,29 @@ and event config relay for a given platform event.
 ##### 1. Create a Custom Platform Event (if not existing)
 You can create your custom Platform Event from the Saleforce GUI or via Metadata API.
 
-A sample platform event is included in this repo (./force-app/main/default/objects/TestForAWS__e.object-meta.xml).
+A sample a Platform Event is included in this repo.
 
 ##### 2. Create a Channel for a Custom Platform Event
-You can just use the class "AwsEventBridgeBuilderFacade" from this repo:
+You can simply use the "AwsEventBridgeBuilder" component from this repo:
 
 `AwsEventBridgeBuilderFacade.createPlatformEventChannel(channelName, label, isDataChannel)`
 
-If you want to create them by your own, you can use Metadata API or Tooling API.
+If you want to create them yourself, you can use the Metadata API or the Tooling API.
 
 ##### 3. Create a Channel Member to Associate the Custom Platform Event
-You can just use the class "AwsEventBridgeBuilderFacade" from this repo:
+You can simply use the "AwsEventBridgeBuilder" component from this repo:
 
 `AwsEventBridgeBuilderFacade.createPlatformEventChannelMember(channelMemberName, channelName, platformEventName)`
 
-If you want to create them by your own, you can use Metadata API or Tooling API.
+If you want to create them yourself, you can use the Metadata API or the Tooling API.
 
 ##### 4. Create named credentials
-You can just modify the example named credentials from this repo and deploy them. 
+You can simply modify the example named credentials from this repo and deploy them via sfdx. 
 
-Another option is to create them also via Tooling API. Please use following method:
+Another option is to use the "AwsEventBridgeBuilder" component from this repo:
 `AwsEventBridgeBuilderFacade.createNamedCredentials(developerName, label, region, arnId)`
 
-If you want to create them by your own, please use the legacy type of named credentials with following settings: 
+If you want to create them yourself, please use the legacy type with following settings: 
 - Identity Type = Named Principal 
 - Authentication Protocol = No Authentication
 - URL = arn:aws:[REGION]:[AWS ACCOUNTID]
@@ -150,51 +160,50 @@ If you want to create them by your own, please use the legacy type of named cred
 ![](assets/img/named_credentials.png)
 
 ##### 5. Create an Event Relay Configuration (via Metadata API, Tooling API or via APEX classe)
-You can just use the class "AwsEventBridgeBuilderFacade" from this repo:
+You can simply use the "AwsEventBridgeBuilder" component from this repo:
 
 `AwsEventBridgeBuilderFacade.createEventRelayConfig(configName, eventChannelAPIName)`
 
-If you want to create them by your own, you can use Metadata API or Tooling API.
+If you want to create them yourself, you can use the Metadata API or the Tooling API.
 
 ##### 6. Activate the Event Bus in AWS Amazon EventBridge
-Just browse to EventBridge - Partner Event Sources. You will see your event channel with status "Pending". 
+Just go to EventBridge - Partner Event Sources. You will see your event channel with the status "Pending".
 ![](assets/img/partner_source.png)
 
-You can now click "Associate" to activate the event source and connect it with your event bus.
+You can now click "Associate" to activate the event source and associate it with your event bus.
 ![](assets/img/source_associate.png)
 
 I usually associate the bus with CloudWatch to see the event as a log file.
 
 ##### 7. Activate Event Relay Configuration (via Metadata API, Tooling API or via APEX classe)
-You can just use the class "AwsEventBridgeBuilderFacade" from this repo:
+You can simply use the "AwsEventBridgeBuilder" component from this repo:
 
 `AwsEventBridgeBuilderFacade.runEventRelayConfig(eventRelayConfigAPIName)`
 
-If you want to run them by your own, you can use Metadata API or Tooling API.
+If you want to activate it by yourself, you can use the Metadata API or the Tooling API.
 
-You can check the status of the Bus via: 
+You can check the status of the EventRelayConfig via: 
 
 `SELECT EventRelayConfig.DeveloperName, Status, ErrorMessage, ErrorTime, ErrorCode FROM EventRelayFeedback`
 
 ##### 8. Send test event
-Create a sample platform event via FlowBuilder or you can also send one via API or Apex. A sample code for sending one is in the repo
+Create a sample platform event via FlowBuilder, API or Apex. A sample code for sending the sample event is included in this repo
 `SamplePlatformEventPropagation.publishSamplePlatformEvent()`
 
 If you added the event bus to CloudWatch, you will see the logfile there.
 ![](assets/img/event_log.png)
 
-
 ## Limitations
-- It just works for me with ChannelTypes = event. Data channel like Change Data Capture should work but didn't for me. Probably we just have to wait for the next update until you can get rid of custom platform events
+- For me it works only with ChannelTypes = event. Data channels like Change Data Capture should work, but it didn't work for me. Probably we just have to wait for the next update until you can get rid of the custom platform events
 - Platform events are limited to a size of 1MB. If you want to use larger events, I recommend to just send the ID and changed fields and just query the data from Salesforce in the next step. 
-- There is a chance that the EventRelay can fail at Salesforce side and needs to get restarted. I recommend to implement a solution to query the status of the EventRelay, notify your team and try to automatically restart it in case of failure. That could be easy build with scheduled APEX and Tooling API. (Also see Future Improvements)
+- There is a possibility that the EventRelay on the Salesforce side will fail and need to be restarted. I recommend implementing a solution that queries the status of the EventRelay, notifies your team, and attempts to restart it automatically if it fails. This could be easily created using APEX and the Tooling API.
 
 ## Sources
 - https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_event_limits.htm
-- https://aws.amazon.com/eventbridge/pricing/
-- https://aws.amazon.com/sqs/pricing/
+- https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_monitor_usage.htm
 - https://help.salesforce.com/s/articleView?id=release-notes.rn_event_bus_relay_pilot.htm&type=5&release=236&language=en_US
 - https://api.sap.com/package/AmazonWebServicesAdapter/overview
+- https://aws.amazon.com/eventbridge/pricing/
+- https://aws.amazon.com/sqs/pricing/
 - https://docs.aws.amazon.com/lambda/latest/dg/getting-started.html
 - https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/WhatIsCloudWatch.html
-- https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_monitor_usage.htm
