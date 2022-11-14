@@ -50,7 +50,7 @@ This is an example use case if e.g. the fields on your object changes or you add
 | Sum                                                                        | ~ 2h   |
 
 
-### AWS Costs - Example calculation
+### AWS Costs - Example calculation (Full Payload)
 
 **Assumption:** 
 - Location: EU-Central
@@ -65,10 +65,32 @@ This is an example use case if e.g. the fields on your object changes or you add
 | AWS EventBridge             | -            | 1.00$ / 1.000.000 (64kb chunks) | 1,2 Mio events | 1,20$         |
 | AWS EventBridge Replay      | -            | 0.12$ / GB                      | 0,768 GB       | 0,09$         |
 | AWS EventBridge Destination | -            | 0.24$ / 1.000.000 (64kb chunks) | 1,2 Mio events | 1,20$         |
-| AWS SQS                     | 1.000.000    | 0.40$ / 1.000.000               | Free tier      | 0,00$         |
+| AWS SQS                     | 1.000.000    | 0.40$ / 1.000.000               | 3k events      | 0,00$         |
 |                             |              |                                 |                |               |
 | Sum                         | -            | -                               | -              | 2,49$         |
 
+
+### AWS Costs - Example calculation (Change Data Capture)
+
+**Assumption:**
+- Change Data Capture = Just the Id and changed fields in event -> Consumer queries the fields by itself
+- Location: EU-Central
+- 300.000 Events per Month (10.000 events/24h * 30 days) = Platform Event limit of smaller orgs
+- Event-message size: 16KB
+- Delivery Rate: 99.9% = 3.000 replays
+- Simple transformation via EventBridge Input Transformer
+- Lambda to fetch data from Salesforce Database (Duration Callout: 5s)
+- SQS as dead-letter queue
+
+| AWS Service                 | Free Service          | Payed Service                 | Quantity        | Monthly Costs |
+|-----------------------------|-----------------------|-------------------------------|-----------------|---------------|
+| AWS EventBridge             | -                     | 1.00$ / mio (64kb chunks)     | 300k events     | 0,30$         |
+| AWS EventBridge Replay      | -                     | 0.12$ / GB                    | 0,048 GB        | 0,01$         |
+| AWS EventBridge Destination | -                     | 0.24$ / mio (64kb chunks)     | 300k events     | 0,30$         |
+| AWS Lambda                  | 1.000.000 - 400k GB/s | 0.20$ / mio - 0.000016$ / GBs | 300k - 234 GB/s | 0,00$         |
+| AWS SQS                     | 1.000.000             | 0.40$ / mio                   | 3k events       | 0,00$         |
+|                             |                       |                               |                 |               |
+| Sum                         | -                     | -                             | -               | 0,61$         |
 
 
 ## More Mature Architecture Approach
@@ -161,9 +183,6 @@ Create a sample platform event via FlowBuilder or you can also send one via API 
 If you added the event bus to CloudWatch, you will see the logfile there.
 ![](assets/img/event_log.png)
 
-## Future Improvements
-- Compare costs for full payload event vs. change event + data retrieve via API
-- I implement a monitoring system for the Salesforce-side of the bus
 
 ## Limitations
 - It just works for me with ChannelTypes = event. Data channel like Change Data Capture should work but didn't for me. Probably we just have to wait for the next update until you can get rid of custom platform events
